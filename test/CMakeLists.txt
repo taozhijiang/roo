@@ -24,6 +24,7 @@ aux_source_directory( ./ UNIT_TEST_SRCS )
 add_executable( test ${UNIT_TEST_SRCS} )
 
 set (EXTRA_LIBS Roo)
+set (EXTRA_LIBS ${EXTRA_LIBS} curl)
 set (EXTRA_LIBS ${EXTRA_LIBS} boost_system )
 set (EXTRA_LIBS ${EXTRA_LIBS} gtest gmock)
 

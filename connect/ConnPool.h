@@ -48,7 +48,10 @@ struct ConnStat {
     }
 
     bool expire(uint32_t linger) {
+
         time_t elapse = ::time(NULL) - start_;
+        ignore_unused(elapse);
+
         return static_cast<uint32_t>(::time(NULL) & 0xFFFFFFFFL) > linger;
     }
 
@@ -82,7 +85,7 @@ template<typename T, typename Helper>
 class ConnPool : public std::enable_shared_from_this<ConnPool<T, Helper> > {
 public:
     typedef std::shared_ptr<T> ConnPtr;
-    typedef std::weak_ptr<T>   ConnWeakPtr;
+    typedef std::weak_ptr<T> ConnWeakPtr;
     typedef std::set<ConnPtr, conn_ptr_compare<T> > ConnContainer;
 
 public:
