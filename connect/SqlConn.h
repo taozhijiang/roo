@@ -71,11 +71,11 @@ bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val) {
 
 #if __cplusplus >= 201103L
 
-        if (std::is_float_point<T>::value)
+        if (std::is_floating_point<T>::value)
         {
             val = static_cast<T>(result->getDouble(idx));
         }
-        else if (std::is_intergal<T>::value)
+        else if (std::is_integral<T>::value)
         {
             if (std::is_signed<T>::value) {
                 val = static_cast<T>(result->getInt64(idx));
