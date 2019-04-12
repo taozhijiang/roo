@@ -8,33 +8,67 @@
 using namespace ::testing;
 using namespace roo;
 
-TEST(SqlConnTest, SqlConnDataTypeTest) {
+class SqlConnSt : public ::testing::Test {
 
-    SqlConnPoolHelper helper("localhost", 3306,
-                             "root", "1234", "test");
+protected:
+    void SetUp() {
+        ASSERT_THAT(sql_pool_.init(), Eq(true));
+    }
 
-    std::shared_ptr<ConnPool<SqlConn, SqlConnPoolHelper>> sql_pool_ptr_;
-    sql_pool_ptr_.reset(new ConnPool<SqlConn, SqlConnPoolHelper>("MySQLPool", 5, helper));
-    ASSERT_THAT (sql_pool_ptr_  && sql_pool_ptr_->init(), true);
+    void TearDown() {
+    }
 
+public:
+
+    SqlConnSt() :
+        sql_pool_("MySQLPool", 5,
+                  SqlConnPoolHelper("localhost", 3306,
+                                    "root", "1234", "test")) {
+    }
+
+    virtual ~SqlConnSt() {
+    }
+
+    ConnPool<SqlConn, SqlConnPoolHelper> sql_pool_;
+};
+
+
+TEST_F(SqlConnSt, PoolTest) {
+
+    ASSERT_THAT(sql_pool_.get_capacity(), Eq(5));
+
+    sql_conn_ptr conn, conn2;
+    sql_pool_.request_scoped_conn(conn);
+    ASSERT_THAT(!!conn, Eq(true));
+    ASSERT_THAT(sql_pool_.get_busy_size(), Eq(1));
+
+    sql_pool_.request_scoped_conn(conn2);
+    ASSERT_THAT(!!conn2, Eq(true));
+
+    conn.reset();
+    ASSERT_THAT(sql_pool_.get_idle_size() == 1 && sql_pool_.get_busy_size() == 1, Eq(true));
+}
+
+
+
+TEST_F(SqlConnSt, SqlConnDataTypeTest) {
 
     sql_conn_ptr conn;
-    sql_pool_ptr_->request_scoped_conn(conn);
+    sql_pool_.request_scoped_conn(conn);
     ASSERT_THAT(!!conn, Eq(true));
 
     std::string sql = "SELECT 123, 'ttz', 10.5;";
     shared_result_ptr result;
     result.reset(conn->sqlconn_execute_query(sql));
-    ASSERT_THAT (result && result->next(), Eq(true));
+    ASSERT_THAT(result && result->next(), Eq(true));
 
-    int32_t     int_val {};
-    std::string str_val {};
-    double      flt_val {};
+    int32_t     int_val{};
+    std::string str_val{};
+    double      flt_val{};
 
     bool success = cast_raw_value(result, 1, int_val, str_val, flt_val);
 
     ASSERT_THAT(success && int_val == 123 && str_val == "ttz", Eq(true));
     ASSERT_THAT(flt_val, DoubleEq(10.5));
-
 }
 

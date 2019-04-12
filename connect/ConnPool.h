@@ -95,8 +95,8 @@ public:
         helper_(helper),
         conns_busy_(), conns_idle_(),
         conn_notify_(), conn_notify_mutex_(),
-        conn_trim_linger_(linger_sec),
-        stat_() {
+        stat_(),
+        conn_trim_linger_(linger_sec) {
 
         SAFE_ASSERT(capacity_);
         log_info("ConnPool Maxium Capacity: %lu", capacity_);
@@ -217,9 +217,35 @@ public:
         return;
     }
 
+    size_t get_busy_size() {
+        std::lock_guard<std::mutex> lock(conn_notify_mutex_);
+        return conns_busy_.size();
+    }
 
-    size_t get_conn_capacity() const {
+    size_t get_idle_size() {
+        std::lock_guard<std::mutex> lock(conn_notify_mutex_);
+        return conns_idle_.size();
+    }
+
+    size_t get_capacity() const {
         return capacity_;
+    }
+
+    std::string module_status() const {
+
+        std::stringstream ss;
+
+        ss << "\t" << "capacity: " << capacity_ << std::endl;
+        ss << "\t" << "acquire_count: " << stat_.acquired_count_ << std::endl;
+        ss << "\t" << "acquire_success:" << stat_.acquired_success_ << std::endl;
+
+        {
+            std::lock_guard<std::mutex> lock(conn_notify_mutex_);
+            ss << "\t" << "current_busy:" << conns_busy_.size() << std::endl;
+            ss << "\t" << "current_idle:" << conns_idle_.size() << std::endl;
+        }
+
+        return pool_name_ + ":\n" + ss.str();
     }
 
 private:
@@ -327,6 +353,7 @@ private:
 
         return;
     }
+
 
     int module_status(std::string& module, std::string& name, std::string& val) {
 
