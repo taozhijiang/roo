@@ -12,74 +12,113 @@
 
 #include <other/Log.h>
 
+#include <glog_syslog/logging.h>
+
 
 namespace roo {
 
-//
-// define here
-// Log Store
-//
-CP_log_store_func_t checkpoint_log_store_func_impl_ = NULL;
-void set_checkpoint_log_store_func(CP_log_store_func_t func) {
-    checkpoint_log_store_func_impl_ = func;
-}
 
 // The use of openlog() is optional; it will automatically be called by syslog() if necessary.
-bool log_init(int log_level) {
+bool log_init(int log_level, std::string module,
+              std::string log_dir, int facility) {
 
-    // close first, then initialize with new LOG_LEVEL
-    closelog();
+    if (log_level >= LOG_INFO) {
+        FLAGS_minloglevel = 0; // INFO
+    } else if (log_level >= LOG_WARNING) {
+        FLAGS_minloglevel = 1; // WARNING
+    } else if (log_level >= LOG_ERR) {
+        FLAGS_minloglevel = 2; // ERROR
+    } else if (log_level >= LOG_CRIT) {
+        FLAGS_minloglevel = 3; // FATAL
+    } else {
+        FLAGS_minloglevel = 0;
+    }
 
-    openlog(program_invocation_short_name, LOG_PID, LOG_LOCAL6);
-    setlogmask(LOG_UPTO(log_level));
+    if (!log_dir.empty())
+        FLAGS_log_dir = log_dir;
+
+    FLAGS_syslog_facility = facility;
+
+    if (!module.empty()) {
+        google::InitGoogleLogging(module.c_str());
+    } else {
+        google::InitGoogleLogging("./log");
+    }
+
     return true;
 }
 
 void log_close() {
-
-    log_notice("closing rsyslog...");
-    closelog();
 }
 
 static const std::size_t MAX_LOG_BUF_SIZE = (16 * 1024 - 2);
+
 void log_api(int priority, const char* file, int line, const char* func, const char* msg, ...) {
 
     char buf[MAX_LOG_BUF_SIZE + 2] = { 0, };
-    int n = snprintf(buf, MAX_LOG_BUF_SIZE, "[%s:%d][%s][%#lx] -- ", file, line, func, (long)pthread_self());
 
     va_list arg_ptr;
     va_start(arg_ptr, msg);
-    vsnprintf(buf + n, MAX_LOG_BUF_SIZE - n, msg, arg_ptr);
+    vsnprintf(buf, MAX_LOG_BUF_SIZE, msg, arg_ptr);
     va_end(arg_ptr);
 
-    // 如果消息中夹杂着换行，在rsyslog中处理(尤其是转发的时候)会比较麻烦
-    // 如果原本发送，则接收端是#开头的编码字符，如果转移，根据协议换行意味着消息的结束，消息会丢失
-    // 这种情况下，将消息拆分然后分别发送
+#if 0
+    if (priority <= LOG_CRIT)
+        LEGACY_FATAL(file, line, func).stream() << buf;
+    else if (priority <= LOG_ERR)
+        LEGACY_ERROR(file, line, func).stream() << buf;
+    else if (priority <= LOG_NOTICE)
+        LEGACY_WARNING(file, line, func).stream() << buf;
+    else if (priority <= LOG_DEBUG)
+        LEGACY_INFO(file, line, func).stream() << buf;
+    else
+    /* ?? */;
+#endif
 
-    n = static_cast<int>(strlen(buf));
-    if (likely(std::find(buf, buf + n, '\n') == (buf + n))) {
-        buf[n] = '\n';   // 兼容老的log_service
-        if (checkpoint_log_store_func_impl_) {
-            checkpoint_log_store_func_impl_(priority, "%s", buf);
-        } else {
-            fprintf(stdout, "%s", buf);
-        }
-        return;
-    }
+    if (priority <= LOG_CRIT)
+        LEGACY(FATAL, file, line, func) << buf;
+    else if (priority <= LOG_ERR)
+        LEGACY(ERROR, file, line, func) << buf;
+    else if (priority <= LOG_NOTICE)
+        LEGACY(WARNING, file, line, func) << buf;
+    else if (priority <= LOG_DEBUG)
+        LEGACY(INFO, file, line, func) << buf;
+    else
+    /* ?? */;
+}
 
-    // 拆分消息
-    std::vector<std::string> messages;
-    boost::split(messages, buf, boost::is_any_of("\r\n"));
-    for (std::vector<std::string>::iterator it = messages.begin(); it != messages.end(); ++it) {
-        if (!it->empty()) {
-            std::string message = (*it) + "\n";
-            if (checkpoint_log_store_func_impl_) {
-                checkpoint_log_store_func_impl_(priority, "%s", message.c_str());
-            } else {
-                fprintf(stdout, "%s", message.c_str());
-            }
-        }
-    }
+void log_api_if(int priority, bool condition, const char* file, int line, const char* func, const char* msg, ...) {
+
+    char buf[MAX_LOG_BUF_SIZE + 2] = { 0, };
+
+    va_list arg_ptr;
+    va_start(arg_ptr, msg);
+    vsnprintf(buf, MAX_LOG_BUF_SIZE, msg, arg_ptr);
+    va_end(arg_ptr);
+
+#if 0
+    if (priority <= LOG_CRIT)
+        LEGACY_FATAL_IF(condition, file, line, func).stream() << buf;
+    else if (priority <= LOG_ERR)
+        LEGACY_ERROR_IF(condition, file, line, func).stream() << buf;
+    else if (priority <= LOG_NOTICE)
+        LEGACY_WARNING_IF(condition, file, line, func).stream() << buf;
+    else if (priority <= LOG_DEBUG)
+        LEGACY_INFO_IF(condition, file, line, func).stream() << buf;
+    else
+    /* ?? */;
+#endif
+
+    if (priority <= LOG_CRIT)
+        LEGACY_IF(FATAL, condition, file, line, func) << buf;
+    else if (priority <= LOG_ERR)
+        LEGACY_IF(ERROR, condition, file, line, func) << buf;
+    else if (priority <= LOG_NOTICE)
+        LEGACY_IF(WARNING, condition, file, line, func) << buf;
+    else if (priority <= LOG_DEBUG)
+        LEGACY_IF(INFO, condition, file, line, func) << buf;
+    else
+    /* ?? */;
 }
 
 

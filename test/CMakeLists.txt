@@ -23,9 +23,11 @@ set (TEST_HOST_LIB Roo)
 set (EXTRA_LIBS ${EXTRA_LIBS} curl)
 set (EXTRA_LIBS ${EXTRA_LIBS} boost_system)
 set (EXTRA_LIBS ${EXTRA_LIBS} mysqlcppconn)
+set (EXTRA_LIBS ${EXTRA_LIBS} glog_syslog)
 set (EXTRA_LIBS ${EXTRA_LIBS} gtest gmock gtest_main)
 
 
 add_individual_test(SqlConn)
 add_individual_test(EQueue)
 add_individual_test(HttpClient)
+add_individual_test(Log)
