@@ -11,6 +11,7 @@ namespace roo {
 
 
 bool TimerObject::init() {
+
     steady_timer_.reset(new steady_timer(io_service_));
     if (!steady_timer_) {
         log_err("new steady_timer failed.");

@@ -28,7 +28,7 @@ include_directories( ../xtra_rhelz.x/include
                      ../xtra_rhelz.x/include/google
                      ./ )
 
-SET(SUBDIR connect concurrency container crypto string other)
+SET(SUBDIR connect concurrency container crypto string other scaffold)
 foreach(dir ${SUBDIR})
     aux_source_directory(${dir} SUB_DIR_SOURCE)
     SET(ROO_SOURCE ${SUB_DIR_SOURCE})
