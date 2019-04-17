@@ -339,7 +339,7 @@ int RedisConn::LoadScript(const std::string& script, std::string& sha) {
         }
 
         sha = std::string(r->str, r->len);
-        log_alert("Success load with new sha: %s", sha.c_str());
+        log_warning("Success load with new sha: %s", sha.c_str());
 
     } while (0);
 
@@ -363,7 +363,7 @@ int RedisConn::CheckSha(const std::string& sha, bool& sha_exist) {
 
         if (r->type == REDIS_REPLY_ARRAY && r->elements > 0 && r->element[0]->integer == 1) {
             sha_exist = true;
-            log_alert("script %s exist!", sha.c_str());
+            log_warning("script %s exist!", sha.c_str());
         } else if (r->type == REDIS_REPLY_ARRAY && r->elements > 0 && r->element[0]->integer == 0) {
             sha_exist = false;
             log_err("script %s not exist!", sha.c_str());

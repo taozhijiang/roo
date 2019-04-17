@@ -24,20 +24,7 @@ namespace roo {
 
 struct StrUtil {
 
-    static const int kMaxBuffSize = 2 * 8190;
-    static std::string str_format(const char* fmt, ...) {
-
-        char buff[kMaxBuffSize + 1] = { 0, };
-        uint32_t n = 0;
-
-        va_list ap;
-        va_start(ap, fmt);
-        n += vsnprintf(buff, kMaxBuffSize, fmt, ap);
-        va_end(ap);
-        buff[n] = '\0';
-
-        return std::string(buff, n);
-    }
+    static std::string str_format(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 
     static size_t trim_whitespace(std::string& str) {
@@ -60,12 +47,10 @@ struct StrUtil {
 
 
     template<typename T>
-    static std::string convert_to_string(const T& arg) {
-        try {
-            return boost::lexical_cast<std::string>(arg);
-        } catch (boost::bad_lexical_cast& e) {
-            return "";
-        }
+    static std::string to_string(const T& arg) {
+        std::stringstream ss;
+        ss << arg;
+        return ss.str();
     }
 
 
@@ -81,7 +66,7 @@ struct StrUtil {
         return boost::algorithm::trim_copy(boost::to_lower_copy(str));
     }
 
-    // 删除host尾部的端口号
+      // 删除host尾部的端口号
     static std::string drop_host_port(std::string host) {  // copy
         host = boost::algorithm::trim_copy(boost::to_lower_copy(host));
         auto pos = host.find(':');
@@ -90,7 +75,39 @@ struct StrUtil {
         }
         return host;
     }
+
 };
+
+
+
+std::string StrUtil::str_format(const char* fmt, ...) {
+
+    std::string str;
+    va_list ap;
+    va_start(ap, fmt);
+
+    size_t bufSize = 1024;
+    while (true) {
+        char buf[bufSize];
+        // vsnprintf trashes the va_list, so copy it first
+        va_list aq;
+        va_copy(aq, ap);
+
+        int r = vsnprintf(buf, bufSize, fmt, aq);
+        va_end(aq);
+        size_t r2 = size_t(r);
+        if (r2 < bufSize) {
+            str = std::string(buf);
+            break;
+        }
+
+        bufSize = r2 + 1;
+    }
+
+    va_end(ap);
+    return str;
+}
+
 
 } // roo
 

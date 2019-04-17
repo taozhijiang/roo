@@ -49,21 +49,6 @@ public:
     const string charset_;
 };
 
-static const int kMaxBuffSize = 2 * 8190;
-static std::string va_format(const char* fmt, ...) {
-
-    char buff[kMaxBuffSize + 1] = { 0, };
-    uint32_t n = 0;
-
-    va_list ap;
-    va_start(ap, fmt);
-    n += vsnprintf(buff, kMaxBuffSize, fmt, ap);
-    va_end(ap);
-    buff[n] = '\0';
-
-    return std::string(buff, n);
-}
-
 template<typename T>
 bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val) {
 

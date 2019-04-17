@@ -127,19 +127,7 @@ public:
             log_err("initialized ping test failed.");
             return false;
         }
-#if 0
-        if (conn_trim_linger_) {
-            log_info("we will try to trim idle connection %u sec for %s.",
-                     conn_trim_linger_, pool_name_.c_str());
-
-            Timer::instance().add_timer(std::bind(&ConnPool::do_conn_linger_trim, this->shared_from_this()), 1*1000, true);
-        }
-
-        Status::instance().register_status_callback(
-                                                    "ConnPool_" + pool_name_,
-                                                    std::bind(&ConnPool::module_status, this->shared_from_this(),
-                                                              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-#endif
+        
         return true;
     }
 

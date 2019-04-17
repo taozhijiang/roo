@@ -75,7 +75,7 @@ int Setting::update_runtime_setting() {
         ret += (it->second)(*setting_ptr_); // call it!
     }
 
-    log_alert("Setting::update_runtime_conf total callback return: %d", ret);
+    log_warning("Setting::update_runtime_conf total callback return: %d", ret);
     in_process_ = false;
 
     return ret;
