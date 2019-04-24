@@ -24,6 +24,7 @@ namespace roo {
 
 struct StrUtil {
 
+    // 声明中带有format属性
     static std::string str_format(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 
@@ -48,7 +49,7 @@ struct StrUtil {
 
     template<typename T>
     static std::string to_string(const T& arg) {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << arg;
         return ss.str();
     }
