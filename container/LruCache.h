@@ -12,12 +12,11 @@
 #include <vector>
 #include <unordered_map>
 
+#include <assert.h>
 
 // 基于unordered_map(hash)实现的LRU缓存数据结构，可以集成与应用软件内部的缓存机制
-// 基本功能：
-// 1. 基于元素个数和内存使用限制的evict策略
-// 2. 提供迭代器接口，方便按LRU、MRU顺序访问元素
-// 3. (TODO) 提供元素TTL过期自动删除的机制
+// 1. (TODO) 更加准确的内存使用计算，因为某些类型(至少std::string)的存储数据是放在内存中的
+// 2. (TODO) 提供元素TTL过期自动删除的机制
 //
 // 除了内部保护list外，数据结构本身不持锁，使用者进行并发控制的保护
 
@@ -78,9 +77,10 @@ public:
     typedef std::pair<const TKey, TValue>  SnapshotValue;
 
 
-    LruCache(size_t max_count, size_t max_memory):
+    LruCache(size_t max_count, size_t max_memory = 0):
         max_count_(max_count),
         max_memory_(max_memory),
+        mem_used_(0),
         head_(),
         tail_() {
             head_.prev_ = NULL;
@@ -137,6 +137,7 @@ public:
         }
 
         link_push_front(node);
+        mem_used_ = mem_used_ + sizeof(key) + sizeof(valNode) + sizeof(ListNodeType);
 
         evict();
         return true;
@@ -150,10 +151,12 @@ public:
 
         // update
         ValueNodeType& oldValue = iter->second;
+        size_t old_value_size = sizeof(oldValue.value_);
         oldValue.value_ = value;
 
         delink(oldValue.node_);
         link_push_front(oldValue.node_);
+        mem_used_ = mem_used_ + sizeof(value) - old_value_size;
 
         evict();
         return true;
@@ -174,6 +177,7 @@ public:
         // reset all
         head_.next_ = &tail_;
         tail_.prev_ = &head_;
+        mem_used_ = 0;
     }
 
     // 对容器中的所有key进行快照并拷贝到keys中
@@ -190,13 +194,16 @@ public:
         return container_.size();
     }
 
+    size_t item_mem_used() const {
+        return mem_used_;
+    }
+
 
 private:
 
-    size_t item_mem_size(const TKey* key) const {
+    size_t item_mem_size(ValueNodeType& valueNode) const {
         return 0;
     }
-
 
     // 列表操作，从LRU链表中删除该节点
     void delink(ListNodeType* node) {
@@ -220,7 +227,8 @@ private:
     // 淘汰元素
     void evict() {
 
-        while(container_.size() >= max_count_) {
+        while(container_.size() >= max_count_ ||
+              (max_memory_ != 0 && mem_used_ >= max_memory_) ) {
 
             if(container_.size() <= 1)
                 return;
@@ -228,6 +236,11 @@ private:
             ListNodeType* ill = tail_.prev_;
             if(ill == &head_)
                 return;
+            
+            auto iter = container_.find(ill->key_);
+            assert(iter != container_.end());
+
+            mem_used_ = mem_used_ - ( sizeof(iter->first) + sizeof(iter->second) + sizeof(ListNodeType) );
             delink(ill);
             container_.erase(ill->key_);
             delete ill;
@@ -236,6 +249,8 @@ private:
 
     const size_t max_count_;      // 最大元素个数
     const size_t max_memory_;     // 最大内存占用量(估算)
+    size_t       mem_used_;
+
     Container    container_;   // 主元素存储hash容器
     
     ListNodeType head_;         // 实体非指针，用于队列的头尾
