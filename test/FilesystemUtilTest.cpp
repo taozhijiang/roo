@@ -46,5 +46,8 @@ TEST(FilesystemUtilTest, FileRWTest) {
     code = FilesystemUtil::read_file(test_filename, vec);
     ASSERT_THAT(code, Eq(0));
     ASSERT_THAT(vec.size(), Eq(3));
+    ASSERT_THAT(vec[0], Eq("I am \n"));
+    ASSERT_THAT(vec[1], Eq(" nicol\r\n"));
+    ASSERT_THAT(vec[2], Eq("xxxa abs"));
 
 }
