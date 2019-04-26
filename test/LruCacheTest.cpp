@@ -19,7 +19,7 @@ TEST(LruCacheTest, LRUSmokeTest) {
     std::string value;
     ASSERT_THAT(caches.find("key2", value) && value == "value2", Eq(true));
 
-    ASSERT_THAT(caches.item_count(), Eq(2));
+    ASSERT_THAT(caches.total_count(), Eq(2));
 
     ASSERT_THAT(caches.find("key1"), Eq(true));
     ASSERT_THAT(caches.find("key3"), Eq(false));
@@ -32,26 +32,23 @@ TEST(LruCacheTest, LRUSmokeTest) {
 
 TEST(LruCacheTest, MemTest) {
 
-#if 0
     LruCache<std::string, std::string> caches(10, 1000);
 
-    ASSERT_THAT(caches.item_mem_used(), Eq(0));
+    ASSERT_THAT(caches.total_mem_used(), Eq(0));
 
     ASSERT_THAT(caches.insert("key1", "value1"), Eq(true));
     ASSERT_THAT(caches.insert("key2", "value2"), Eq(true));
-    ASSERT_THAT(caches.item_mem_used(), Gt(0));
-    
-    size_t mem = caches.item_mem_used();
+    ASSERT_THAT(caches.total_mem_used(), Gt(0));
+
+    size_t mem = caches.total_mem_used();
     ASSERT_THAT(caches.insert_or_update("key2", "value4"), Eq(true));
 
     std::string value;
     ASSERT_THAT(caches.find("key2", value) && value == "value4", Eq(true));
-    ASSERT_THAT(caches.item_mem_used(), Eq(mem));
+    ASSERT_THAT(caches.total_mem_used(), Eq(mem));
     std::cout << mem << std::endl;
 
     ASSERT_THAT(caches.insert_or_update("key2", "value333"), Eq(true));
-    ASSERT_THAT(caches.item_mem_used(), Eq(mem + 2));
-
-#endif
+    ASSERT_THAT(caches.total_mem_used(), Eq(mem + 2));
 
 }

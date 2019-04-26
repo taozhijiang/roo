@@ -29,14 +29,14 @@ public:
     typedef typename Container::const_iterator const_iterator;
 
 public:
-    PairVec():
-        lock_(new std::mutex()), 
+    PairVec() :
+        lock_(new std::mutex()),
         items_() {
     }
 
     // not support initilized_list
-    explicit PairVec(Container& init):
-        items_({}) {
+    explicit PairVec(Container& init) :
+        items_({ }) {
         for (auto iter = init.begin(); iter != init.end(); ++iter)
             items_.push_back(*iter);
     }
@@ -65,7 +65,7 @@ public:
 
     void PUSH_BACK(const K& k, const V& v) {
         std::lock_guard<std::mutex> lock(*lock_);
-        items_.push_back({k, v}); // make_pair can not use - const ref
+        items_.push_back({ k, v }); // make_pair can not use - const ref
     }
 
     void PUSH_BACK(const Entry& entry) {
@@ -108,7 +108,7 @@ public:
     V VALUE(const K& k) const {
         std::lock_guard<std::mutex> lock(*lock_);
 
-        V v {}; // default value
+        V v{}; // default value
         for (size_t idx = 0; idx < items_.size(); ++idx) {
             if (items_[idx].first == k) {
                 return items_[idx].second;
