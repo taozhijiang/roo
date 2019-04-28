@@ -11,38 +11,46 @@
 // 对于一些服务来说，即使不需要绑定端口，但是为了同ZooKeeper合作提供自己的实例
 // 名字，还是需要使用到一个端口的
 
-#include <sys/types.h>          /* See NOTES */
-#include <sys/socket.h>
+// 这里提供port()和acceptor()接口，应用程序还是可以使用他来做网络服务使用的
 
-#include <netinet/ip.h> /* superset of previous */
-#include <arpa/inet.h>
+#include <system/ConstructException.h>
+#include <boost/asio.hpp>
+
 
 namespace roo {
 
+using namespace boost::asio;
+
 class InsaneBind {
+
 public:
 
     InsaneBind() :
         port_(0),
-        socketfd_(0) {
+        io_service_(),
+	    ep_(),
+        acceptor_(io_service_, ep_.protocol())
+    {
         do_internal_bind();
     }
 
     explicit InsaneBind(uint16_t port) :
         port_(port),
-        socketfd_(0) {
+        io_service_(),
+	    ep_(),
+        acceptor_(io_service_, ep_.protocol()) {
         do_internal_bind();
     }
 
     ~InsaneBind() {
-        if(socketfd_ > 0) {
-            close(socketfd_);
-            socketfd_ = 0;
-        }
     }
 
     uint16_t port() {
         return port_;
+    }
+
+    boost::asio::ip::tcp::acceptor& acceptor() {
+        return acceptor_;
     }
     
     // 禁止拷贝
@@ -53,35 +61,43 @@ private:
 
     void do_internal_bind() {
 
-        if( (socketfd_ = ::socket(AF_INET, SOCK_STREAM, 0)) < 0)
-            return;
-        
-        int flag = 1;
-        ::setsockopt(socketfd_, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+        uint16_t n_port = 0;
+        try {
 
-        struct sockaddr_in srvaddr {};
-        srvaddr.sin_family = AF_INET;
-        srvaddr.sin_port = port_ > 0 ? htons(port_) : 0;
-        srvaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+            ep_ = ip::tcp::endpoint(ip::address_v4::any(), port_);
+            acceptor_.set_option(ip::tcp::acceptor::reuse_address(true));
 
-        if(::bind(socketfd_, (struct sockaddr *)&srvaddr, sizeof(struct sockaddr_in)) < 0)
-            return;
+            acceptor_.bind(ep_);
+            // ("bind address error: %d, %s", ec.value(), ec.message().c_str());
+            
+            acceptor_.listen();
+            
+            ip::tcp::endpoint le = acceptor_.local_endpoint(); 
+            n_port = le.port();
 
-        struct sockaddr_in r_addr {};
-        socklen_t len = sizeof(r_addr);
-        if(::getsockname(socketfd_, (struct sockaddr *)&r_addr, &len) < 0)
-            return;
-
-        // return port check here
-        if(port_ != 0 && port_ != ntohs(r_addr.sin_port)) {
-            port_ = 0;
-        } else {
-            port_ = ntohs(r_addr.sin_port);
+        } catch (std::exception& e) {
+            throw ConstructException("construct boost::asio failed.");
         }
+
+        if(n_port == 0) {
+            throw ConstructException("request port info failed.");
+        }
+
+        if(port_ != 0 && n_port != port_) {
+            throw ConstructException("port mistach found.");
+        }
+
+        port_ = n_port;
     }
 
+private:
+
     uint16_t port_;
-    int socketfd_;
+
+    boost::asio::io_service io_service_;
+
+    ip::tcp::endpoint ep_;
+    ip::tcp::acceptor acceptor_;
 };
 
 } // end namespace roo

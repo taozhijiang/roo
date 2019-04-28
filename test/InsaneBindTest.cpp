@@ -30,3 +30,22 @@ TEST(InsaneBindTest, BindWithOutPortTest) {
 }
 
 
+TEST(InsaneBindTest, BindOutofRangTest) {
+
+    uint16_t expect_port = 80;
+    
+    try {
+
+        InsaneBind client (expect_port);
+        
+        uint16_t bind_port = client.port();
+        ASSERT_THAT(bind_port, Ne(expect_port));
+    } catch (std::exception& e) {
+
+    }
+
+}
+
+
+
+
