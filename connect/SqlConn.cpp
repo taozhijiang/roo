@@ -28,7 +28,7 @@ bool SqlConn::init(int64_t conn_uuid) {
         std::stringstream output;
         output << "# " << driver_->getName() << ", version ";
         output << driver_->getMajorVersion() << "." << driver_->getMinorVersion();
-        output << "." << driver_->getPatchVersion() << endl;
+        output << "." << driver_->getPatchVersion() << std::endl;
         log_info("Driver info: %s", output.str().c_str());
 
         sql::ConnectOptionsMap connection_properties;
@@ -52,9 +52,9 @@ bool SqlConn::init(int64_t conn_uuid) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
         return false;
     }
@@ -88,7 +88,7 @@ bool SqlConn::ping_test() {
     return true;
 }
 
-bool SqlConn::sqlconn_execute(const string& sql) {
+bool SqlConn::sqlconn_execute(const std::string& sql) {
 
     try {
 
@@ -103,17 +103,17 @@ bool SqlConn::sqlconn_execute(const string& sql) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << " STMT: " << sql << endl;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << " STMT: " << sql << std::endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
     }
 
     return false;
 }
 
-sql::ResultSet* SqlConn::sqlconn_execute_query(const string& sql) {
+sql::ResultSet* SqlConn::sqlconn_execute_query(const std::string& sql) {
 
     sql::ResultSet* result = NULL;
 
@@ -130,10 +130,10 @@ sql::ResultSet* SqlConn::sqlconn_execute_query(const string& sql) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << " STMT: " << sql << endl;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << " STMT: " << sql << std::endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
     }
@@ -141,7 +141,7 @@ sql::ResultSet* SqlConn::sqlconn_execute_query(const string& sql) {
     return result;
 }
 
-int SqlConn::sqlconn_execute_update(const string& sql) {
+int SqlConn::sqlconn_execute_update(const std::string& sql) {
 
     try {
 
@@ -155,10 +155,10 @@ int SqlConn::sqlconn_execute_update(const string& sql) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << " STMT: " << sql << endl;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << " STMT: " << sql << std::endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
     }

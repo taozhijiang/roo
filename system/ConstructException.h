@@ -12,6 +12,7 @@
 #include <exception>
 #include <cstring>
 
+// 这里不使用std::string，std::string只有移动操作符才保证不会抛出新的异常
 
 namespace roo {
     

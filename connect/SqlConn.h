@@ -17,6 +17,9 @@
 #include <boost/type_traits.hpp>
 #endif
 
+#include <string>
+
+
 #include <cppconn/driver.h>
 #include <cppconn/connection.h>
 #include <cppconn/exception.h>
@@ -34,19 +37,19 @@ typedef std::shared_ptr<sql::ResultSet> shared_result_ptr;
 
 struct SqlConnPoolHelper {
 public:
-    SqlConnPoolHelper(string host, int port,
-                      string user, string passwd, string db) :
+    SqlConnPoolHelper(std::string host, int port,
+                      std::string user, std::string passwd, std::string db) :
         host_(host), port_(port),
         user_(user), passwd_(passwd), db_(db) {
     }
 
 public:
-    const string host_;
+    const std::string host_;
     const int port_;
-    const string user_;
-    const string passwd_;
-    const string db_;
-    const string charset_;
+    const std::string user_;
+    const std::string passwd_;
+    const std::string db_;
+    const std::string charset_;
 };
 
 template<typename T>
@@ -93,9 +96,9 @@ bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
         return false;
@@ -113,9 +116,9 @@ inline bool cast_raw_value(shared_result_ptr result, const uint32_t idx, std::st
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
         return false;
@@ -140,9 +143,9 @@ inline int rs_is_null(shared_result_ptr result, const uint32_t idx) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
     }
 
@@ -166,17 +169,17 @@ public:
     }
 
     // Simple SQL API
-    bool sqlconn_execute(const string& sql);
-    sql::ResultSet* sqlconn_execute_query(const string& sql);
-    int sqlconn_execute_update(const string& sql);
+    bool sqlconn_execute(const std::string& sql);
+    sql::ResultSet* sqlconn_execute_query(const std::string& sql);
+    int sqlconn_execute_update(const std::string& sql);
 
     // 常用操作
     template<typename T>
-    bool sqlconn_execute_query_value(const string& sql, T& val);
+    bool sqlconn_execute_query_value(const std::string& sql, T& val);
     template<typename ... Args>
-    bool sqlconn_execute_query_values(const string& sql, Args& ... rest);
+    bool sqlconn_execute_query_values(const std::string& sql, Args& ... rest);
     template<typename T>
-    bool sqlconn_execute_query_multi(const string& sql, std::vector<T>& vec);
+    bool sqlconn_execute_query_multi(const std::string& sql, std::vector<T>& vec);
 
     bool begin_transaction() { return sqlconn_execute("START TRANSACTION"); }
     bool commit() { return sqlconn_execute("COMMIT"); }
@@ -196,7 +199,7 @@ private:
 
 
 template<typename T>
-bool SqlConn::sqlconn_execute_query_value(const string& sql, T& val) {
+bool SqlConn::sqlconn_execute_query_value(const std::string& sql, T& val) {
     try {
 
         if (!conn_->isValid()) {
@@ -222,10 +225,10 @@ bool SqlConn::sqlconn_execute_query_value(const string& sql, T& val) {
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << " STMT: " << sql << endl;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << " STMT: " << sql << std::endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
         return false;
@@ -235,7 +238,7 @@ bool SqlConn::sqlconn_execute_query_value(const string& sql, T& val) {
 
 
 template<typename ... Args>
-bool SqlConn::sqlconn_execute_query_values(const string& sql, Args& ... rest) {
+bool SqlConn::sqlconn_execute_query_values(const std::string& sql, Args& ... rest) {
 
     try {
         if (!conn_->isValid()) {
@@ -261,10 +264,10 @@ bool SqlConn::sqlconn_execute_query_values(const string& sql, Args& ... rest) {
     } catch (sql::SQLException &e){
 
         std::stringstream output;
-        output << " STMT: " << sql << endl;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << " STMT: " << sql << std::endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
         return false;
@@ -274,7 +277,7 @@ bool SqlConn::sqlconn_execute_query_values(const string& sql, Args& ... rest) {
 
 
 template<typename T>
-bool SqlConn::sqlconn_execute_query_multi(const string& sql, std::vector<T>& vec) {
+bool SqlConn::sqlconn_execute_query_multi(const std::string& sql, std::vector<T>& vec) {
 
     try {
 
@@ -302,10 +305,10 @@ bool SqlConn::sqlconn_execute_query_multi(const string& sql, std::vector<T>& vec
     } catch (sql::SQLException& e) {
 
         std::stringstream output;
-        output << " STMT: " << sql << endl;
-        output << "# ERR: " << e.what() << endl;
-        output << " (MySQL error code: " << e.getErrorCode() << endl;
-        output << ", SQLState: " << e.getSQLState() << " )" << endl;
+        output << " STMT: " << sql << std::endl;
+        output << "# ERR: " << e.what() << std::endl;
+        output << " (MySQL error code: " << e.getErrorCode() << std::endl;
+        output << ", SQLState: " << e.getSQLState() << " )" << std::endl;
         log_err("%s", output.str().c_str());
 
         return false;
