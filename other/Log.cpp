@@ -14,11 +14,15 @@
 
 #include <glog_syslog/logging.h>
 
+#include <mutex>
 
 namespace roo {
 
+static bool  log_initialized_ = false;
+static std::mutex log_initialized_mutex_ {};
 
 // The use of openlog() is optional; it will automatically be called by syslog() if necessary.
+// IsGoogleLoggingInitialized(), you can not initialize Glog more than one time
 bool log_init(int log_level, std::string module,
               std::string log_dir, int facility) {
 
@@ -39,12 +43,18 @@ bool log_init(int log_level, std::string module,
 
     FLAGS_syslog_facility = facility;
 
+    std::lock_guard<std::mutex> lock(log_initialized_mutex_);
+    if (log_initialized_) {
+        return true;
+    }
+
     if (!module.empty()) {
         google::InitGoogleLogging(module.c_str());
     } else {
-        google::InitGoogleLogging("./log");
+        google::InitGoogleLogging(program_invocation_short_name);
     }
 
+    log_initialized_ = true;
     return true;
 }
 
