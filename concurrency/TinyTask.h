@@ -73,7 +73,7 @@ public:
         }
 
         if (nsize != max_spawn_task_) {
-            log_notice("update ThreadMng task size from %u to %u",
+            log_warning("update ThreadMng task size from %u to %u",
                        max_spawn_task_, nsize);
             max_spawn_task_ = nsize;
 
@@ -90,7 +90,7 @@ private:
         while (true) {
             
             if( thread_terminate_ ) {
-                log_debug("TinyTask thread %#lx about to terminate ...", (long)pthread_self());
+                log_info("TinyTask thread %#lx about to terminate ...", (long)pthread_self());
                 break;
             }
 

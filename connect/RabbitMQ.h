@@ -91,7 +91,7 @@ public:
         connect_uris_.push_back(connect_uri);
         channel_ids_.insert(0);
 
-        log_notice("current connect_uri size: %lu", connect_uris_.size());
+        log_warning("current connect_uri size: %lu", connect_uris_.size());
     }
 
     explicit RabbitMQHelper(const std::vector<std::string>& connect_uris, int frame_max = 131072 /*128K*/):
@@ -99,7 +99,7 @@ public:
         is_connected_(false) {
         channel_ids_.insert(0);
 
-        log_notice("current connect_uri size: %lu", connect_uris_.size());
+        log_warning("current connect_uri size: %lu", connect_uris_.size());
     }
 
     ~RabbitMQHelper() {
@@ -316,7 +316,7 @@ public:
         if (!is_connected_)
             return;
 
-        log_notice("Channel: %d close...", id_);
+        log_warning("Channel: %d close...", id_);
         amqp_channel_close(mqHelper_.connection_, id_, AMQP_REPLY_SUCCESS); // avoid multi call, only real destruct
         is_connected_ = false;
     }

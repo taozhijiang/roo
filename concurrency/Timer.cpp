@@ -30,7 +30,7 @@ bool TimerObject::init() {
 void TimerObject::timer_run(const boost::system::error_code& ec) {
 
     if (ec == boost::asio::error::operation_aborted) {
-        log_notice("timer was cancelled...");
+        log_warning("timer was cancelled...");
     } else {
 
         // 正常，或者其他错误码则转发给应用程序处理

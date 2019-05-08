@@ -19,7 +19,7 @@ int Status::attach_status_callback(const std::string& name, StatusCallable func)
 
     std::lock_guard<std::mutex> lock(lock_);
     calls_.push_back({name, func});
-    log_debug("attach status for %s success.",  name.c_str());
+    log_info("attach status for %s success.",  name.c_str());
 
     return 0;
 }

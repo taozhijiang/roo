@@ -60,7 +60,7 @@ public:
         io_service_thread_ = std::thread(std::bind(&IoService::io_service_run, this));
         initialized_ = true;
 
-        log_notice("IoService initialized ok.");
+        log_warning("IoService initialized ok.");
         return true;
 
     }
@@ -93,7 +93,7 @@ private:
 
     void io_service_run() {
 
-        log_notice("io_service thread running...");
+        log_warning("io_service thread running...");
 
         // io_service would not have had any work to do,
         // and consequently io_service::run() would have returned immediately.
@@ -101,8 +101,8 @@ private:
         boost::system::error_code ec;
         io_service_.run(ec);
 
-        log_notice("io_service thread terminated ...");
-        log_notice("error_code: {%d} %s", ec.value(), ec.message().c_str());
+        log_warning("io_service thread terminated ...");
+        log_warning("error_code: {%d} %s", ec.value(), ec.message().c_str());
     }
 
 };

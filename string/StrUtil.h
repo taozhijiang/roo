@@ -81,7 +81,7 @@ struct StrUtil {
 
 
 // 长度安全版本，保证能够格式化成功，可能效率较慢
-std::string va_format(const char* fmt, ...) {
+static inline std::string va_format(const char* fmt, ...) {
 
     std::string str;
     va_list ap;

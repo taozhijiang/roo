@@ -30,7 +30,7 @@ public:
     }
 
     ~ThreadGuard() {
-        log_debug("thread exit...");
+        log_info("thread exit...");
         tgroup_.remove_thread(thread_);
     }
 
@@ -140,7 +140,7 @@ public:
         }
 
         if (nsize != max_spawn_task_) {
-            log_notice("update ThreadMng task size from %u to %u",
+            log_warning("update ThreadMng task size from %u to %u",
                        max_spawn_task_, nsize);
             max_spawn_task_ = nsize;
         }

@@ -66,7 +66,7 @@ amqp_channel_t RabbitMQHelper::createChannel() {
     }
 
     channels_[t] = pChannel;    // insert it!!
-    log_notice("created channel: %d", t);
+    log_warning("created channel: %d", t);
     return t;
 }
 
@@ -124,7 +124,7 @@ void RabbitMQHelper::closeConnection() {
     }
 
     channels_.clear();
-    log_notice("Connection is closing...");
+    log_warning("Connection is closing...");
 
     amqp_connection_close(connection_, AMQP_REPLY_SUCCESS);
     amqp_destroy_connection(connection_); //atomatically free resources
@@ -301,7 +301,7 @@ int RabbitChannel::setConfirmSelect(){
     }
 
     is_publish_confirm_ = true;
-    log_notice("Channel will work in confirm mode...");
+    log_warning("Channel will work in confirm mode...");
     return 0;
 }
 
@@ -709,7 +709,7 @@ int RabbitChannel::basicPublish(const std::string &exchange_name,
             if (AMQP_RESPONSE_NORMAL == res.reply_type)
                 amqp_destroy_message(&message_dummy);
         }
-        log_notice("basic.return called!");
+        log_warning("basic.return called!");
         goto connection_err;
     } else {
         log_err("Unexpeced method.id: %d", frame.payload.method.id);
@@ -926,7 +926,7 @@ int RabbitMQHelper::basicConsumeMessage(RabbitMessage& rabbit_msg,
                        * to the previous channel
                        */
 
-                        log_notice("Close other channel: %d", frame.channel);
+                        log_warning("Close other channel: %d", frame.channel);
                         closeChannel(frame.channel);
                         return -1;
 
@@ -937,7 +937,7 @@ int RabbitMQHelper::basicConsumeMessage(RabbitMessage& rabbit_msg,
                        * In this case the whole connection must be restarted.
                        */
 
-                        log_notice("Close connection");
+                        log_warning("Close connection");
                         closeConnection();
                         return -1;
 
@@ -1007,19 +1007,19 @@ bool RabbitMQHelper::doConnect() {
             continue;
         }
 
-        log_notice("rabbitmq client connect to %s:%d/%s ok!", info.host, info.port, info.vhost);
+        log_warning("rabbitmq client connect to %s:%d/%s ok!", info.host, info.port, info.vhost);
         is_connected_ = true;
 
         max_channel_id_ = amqp_get_channel_max(connection_);
         if (max_channel_id_ == 0 || max_channel_id_ > 2048 ) {
             max_channel_id_ = 2048;
         }
-        log_notice("current we support maxium channel: %d", max_channel_id_);
+        log_warning("current we support maxium channel: %d", max_channel_id_);
 
         return true;
     }
 
-    log_notice("We've tried %lu connection_uri, but failed!", connect_uris_.size());
+    log_warning("We've tried %lu connection_uri, but failed!", connect_uris_.size());
 
     is_connected_ = false;
     return false;
@@ -1076,7 +1076,7 @@ bool mq_setup_channel_consume_default(RabbitChannelPtr pChannel, void* pArg) {
         return false;
     }
 
-    log_notice("Broker report info: msg_cnt->%d, cons_cnt->%d", msg_cnt, cons_cnt);
+    log_warning("Broker report info: msg_cnt->%d, cons_cnt->%d", msg_cnt, cons_cnt);
 
     // 路邮键 paybill
     if (pChannel->bindQueue(p_rabbitmq->queue_name_, p_rabbitmq->exchange_name_, p_rabbitmq->route_key_)) {
@@ -1094,7 +1094,7 @@ bool mq_setup_channel_consume_default(RabbitChannelPtr pChannel, void* pArg) {
         return false;
     }
 
-    log_notice("RabbitMQHandler init ok!");
+    log_warning("RabbitMQHandler init ok!");
     return true;
 }
 
@@ -1124,7 +1124,7 @@ bool mq_setup_channel_publish_default(RabbitChannelPtr pChannel, void* pArg) {
         return false;
     }
 
-    log_notice("Broker report info: msg_cnt->%d, cons_cnt->%d", msg_cnt, cons_cnt);
+    log_warning("Broker report info: msg_cnt->%d, cons_cnt->%d", msg_cnt, cons_cnt);
 
     // 路邮键 paybill
     if (pChannel->bindQueue(p_rabbitmq->queue_name_, p_rabbitmq->exchange_name_, p_rabbitmq->route_key_)) {
@@ -1137,7 +1137,7 @@ bool mq_setup_channel_publish_default(RabbitChannelPtr pChannel, void* pArg) {
         return false;
     }
 
-    log_notice("PbiRabbitMQHandler init ok!");
+    log_warning("PbiRabbitMQHandler init ok!");
     return true;
 }
 

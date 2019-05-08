@@ -90,7 +90,7 @@ int Setting::attach_runtime_callback(const std::string& name, SettingUpdateCalla
 
     std::lock_guard<std::mutex> lock(lock_);
     calls_.push_back({name, func});
-    log_debug("register runtime for %s success.",  name.c_str());
+    log_info("register runtime for %s success.",  name.c_str());
 
     return 0;
 }

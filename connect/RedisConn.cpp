@@ -323,7 +323,7 @@ int RedisConn::LoadScript(const std::string& script, std::string& sha) {
     int nResult = 0;
 
     do {
-        log_debug("SCRIPT LOAD %s ", script.c_str());
+        log_info("SCRIPT LOAD %s ", script.c_str());
         redisReply_ptr r = Exec("SCRIPT LOAD %s ", script.c_str());
 
         if (!r) {
@@ -352,7 +352,7 @@ int RedisConn::CheckSha(const std::string& sha, bool& sha_exist) {
     int nResult = 0;
 
     do {
-        log_debug("SCRIPT EXISTS %s", sha.c_str());
+        log_info("SCRIPT EXISTS %s", sha.c_str());
         redisReply_ptr r = Exec("SCRIPT EXISTS %s", sha.c_str());
 
         if (!r) {

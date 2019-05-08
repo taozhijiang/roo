@@ -329,14 +329,14 @@ private:
                 ::gettimeofday(&now, NULL);
                 int64_t elapse_ms = (1000000 * (now.tv_sec - start_time.tv_sec) + now.tv_usec - start_time.tv_usec) / 1000;
                 if (elapse_ms > 20) {
-                    log_notice("too long elapse time: %ld ms, break now", elapse_ms);
+                    log_warning("too long elapse time: %ld ms, break now", elapse_ms);
                     break;
                 }
             }
         }
 
         if (trim_count) {
-            log_debug("pool %s, total checked %d conns, trimed %d conns.", pool_name_.c_str(), count, trim_count);
+            log_info("pool %s, total checked %d conns, trimed %d conns.", pool_name_.c_str(), count, trim_count);
         }
 
         return;

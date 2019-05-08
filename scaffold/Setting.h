@@ -77,7 +77,7 @@ public:
         // 超过10min，重新读取配置文件，尝试
         if (last_update_time_ < ::time(NULL) - 10 * 60) {
 
-            log_debug("reloading cfg file %s, last update interval was %ld secs",
+            log_info("reloading cfg file %s, last update interval was %ld secs",
                       cfg_file_.c_str(),
                       ::time(NULL) - last_update_time_);
 
