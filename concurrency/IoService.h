@@ -28,12 +28,15 @@ public:
         lock_(),
         initialized_(false),
         io_service_thread_(),
-        io_service_(),
-        work_guard_(new boost::asio::io_service::work(io_service_)){
+        io_service_ptr_(new boost::asio::io_service()),
+        work_guard_(){
     }
 
     ~IoService() {
-        io_service_.stop();
+        
+        if(io_service_ptr_)
+            io_service_ptr_->stop();
+        
         work_guard_.reset();
         
         if (io_service_thread_.joinable())
@@ -56,6 +59,12 @@ public:
             return true;
         }
 
+        if(!io_service_ptr_)
+            io_service_ptr_.reset(new boost::asio::io_service());
+
+        // work_guard_ 保证io_service_run不会因为没有任务而退出
+        work_guard_.reset(new boost::asio::io_service::work(*io_service_ptr_));
+
         // 创建io_service工作线程
         io_service_thread_ = std::thread(std::bind(&IoService::io_service_run, this));
         initialized_ = true;
@@ -65,13 +74,18 @@ public:
 
     }
 
-    boost::asio::io_service& get_io_service() {
-        return  io_service_;
+    boost::asio::io_service& io_service() {
+        return *io_service_ptr_;
+    }
+
+    std::shared_ptr<boost::asio::io_service> io_service_ptr() {
+        return io_service_ptr_;
     }
 
     void stop_io_service() {
 
-        io_service_.stop();
+        if(io_service_ptr_)
+            io_service_ptr_->stop();
         work_guard_.reset();
     }
 
@@ -85,7 +99,7 @@ private:
 
     // 启动一个io_service_，主要来处理定时器等常用服务
     std::thread io_service_thread_;
-    boost::asio::io_service io_service_;
+    std::shared_ptr<boost::asio::io_service> io_service_ptr_;
 
     // io_service如果没有任务，会直接退出执行，所以需要
     // 一个强制的work来持有之
@@ -99,7 +113,7 @@ private:
         // and consequently io_service::run() would have returned immediately.
 
         boost::system::error_code ec;
-        io_service_.run(ec);
+        io_service_ptr_->run(ec);
 
         log_warning("io_service thread terminated ...");
         log_warning("error_code: {%d} %s", ec.value(), ec.message().c_str());

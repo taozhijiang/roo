@@ -75,8 +75,14 @@ __attribute__((format(printf, 6, 7)));
     log_api_if( LOG_INFO , !!(condition), __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
 
-
 } // roo
 
+
+// Log to ALERT level and abort the process.
+#define PANIC(...) do { \
+    roo::log_api( LOG_ALERT, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__); \
+    roo::log_api( LOG_ALERT, __FILE__, __LINE__, __FUNCTION__, "Service Exiting..."); \
+    ::abort(); \
+} while (0)
 
 #endif // __ROO_OTHER_LOG_H__
