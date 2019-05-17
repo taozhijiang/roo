@@ -67,8 +67,8 @@ public:
 
         // 创建io_service工作线程
         io_service_thread_ = std::thread(std::bind(&IoService::io_service_run, this));
-        initialized_ = true;
 
+        initialized_ = true;
         log_warning("IoService initialized ok.");
         return true;
 
@@ -86,6 +86,7 @@ public:
 
         if(io_service_ptr_)
             io_service_ptr_->stop();
+
         work_guard_.reset();
     }
 
@@ -98,6 +99,7 @@ private:
     bool initialized_;
 
     // 启动一个io_service_，主要来处理定时器等常用服务
+    // 因为这里只有一个线程，所以不要在其中做过于复杂的操作
     std::thread io_service_thread_;
     std::shared_ptr<boost::asio::io_service> io_service_ptr_;
 
@@ -117,6 +119,8 @@ private:
 
         log_warning("io_service thread terminated ...");
         log_warning("error_code: {%d} %s", ec.value(), ec.message().c_str());
+
+        log_warning("io_service thread %#lx is about to terminate ... ", (long)pthread_self());
     }
 
 };

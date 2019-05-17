@@ -11,7 +11,9 @@
 // 方便文件系统中文件、路径、访问等方面的便捷函数
 
 // std::filesystem will available at C++17
-
+#include <sys/stat.h>
+#include <sys/types.h>
+       
 #include <cstdio>
 #include <unistd.h>
 #include <climits>
@@ -64,6 +66,7 @@ public:
         if(n_path.empty()) return false;
 
         struct stat f_stat {};
+        ::stat(n_path.c_str(), &f_stat);
         if(S_ISDIR(f_stat.st_mode))
             return true;
         
@@ -96,13 +99,18 @@ public:
         std::string n_path = normalize_path(path);
         return ::access(n_path.c_str(), how & (R_OK | W_OK | X_OK)) == 0;
     }
+    
+    static bool mkdir(const std::string& path, mode_t mode = 0755 ) {
+        std::string n_path = normalize_path(path);
+        return ::mkdir(n_path.c_str(), mode) == 0;
+    }
 
     static int read_file(const std::string& path, std::string& content) {
         
         if(!accessable(path, R_OK))
             return -1;
         
-        std::ifstream ifs(path, std::ios::binary | std::ios::ate);
+        std::ifstream ifs(path, std::ios::binary | std::ios::ate); // seek to the end
         if(!ifs.is_open())
             return -1;
         
@@ -116,6 +124,19 @@ public:
         }
         
         return -1;
+    }
+    
+    static int write_file(const std::string& path, const std::string& content) {
+
+        std::ofstream ofs(path, std::ios::binary | std::ios::trunc);
+        if(!ofs.is_open())
+            return -1;
+        
+        ofs << content;
+        int ret = ofs.good() ? 0 : -1;
+        ofs.close();
+        
+        return ret;
     }
 
     static int read_file(const std::string& path, std::vector<std::string>& lines) {
@@ -141,8 +162,12 @@ public:
     }
 
     static int append_file(const std::string& path, const std::string& line, bool append_nl = false) {
-                
         std::ofstream ofs(path, std::ios::binary | std::ios::app);
+        return append_file(ofs, line, append_nl);
+    }
+    
+    static int append_file(std::ofstream& ofs, const std::string& line, bool append_nl = false) {
+        
         if(!ofs.is_open())
             return -1;
 
@@ -150,7 +175,6 @@ public:
         if(append_nl)
             ofs << ofs.widen('\n');
 
-        ofs.close();  
         return 0;
     }
 
