@@ -16,66 +16,84 @@
 
 namespace roo {
 
-typedef std::function<void()> TaskRunnable;
+// 可执行任务类型
+typedef std::function<int()> TaskRunnable;
 
 class ThreadGuard {
+
+    ThreadGuard(const ThreadGuard&) = delete;
+    ThreadGuard& operator=(const ThreadGuard&) = delete;
 
 public:
 
     // TODO: create failed.
-    explicit ThreadGuard(TaskRunnable& run, boost::thread_group& tgroup) :
-        tgroup_(tgroup) {
-        thread_ = new boost::thread(run);
-        tgroup_.add_thread(thread_);
+    explicit ThreadGuard(ThreadMng& mng, TaskRunnable& run) :
+        mng_(mng),
+        func_(run) {
+        thread_ = new boost::thread(internal_run);
+        mng_.add_thread_guard(this);
     }
 
+    // 当ThreadMng在vector中的智能指针删除的时候，会触发这边
+    // 自动将线程从thread_group中移除掉
     ~ThreadGuard() {
+        join();
         log_info("thread exit...");
-        tgroup_.remove_thread(thread_);
-    }
-
-    bool joinable() {
-        return thread_->joinable();
     }
 
     void join() {
-        thread_->join();
+        if (thread_ && thread_->joinable())
+            thread_->join();
     }
 
-    bool try_join_for(uint32_t msec) {
-        return thread_->try_join_for(milliseconds(msec));
-    }
 
 private:
-    ThreadGuard(const ThreadGuard&) = delete;
-    ThreadGuard& operator=(const ThreadGuard&) = delete;
 
-    boost::thread_group& tgroup_;
-    boost::thread*       thread_;
-};
+    void internal_run() {
+        if (func_) {
+            int code = func_();
+            if (code != 0)
+                log_err("ThreadGuard task run return %d.", code);
+        }
 
-class ThreadMng {
-
-public:
-    explicit ThreadMng(uint8_t max_spawn_task) :
-        max_spawn_task_(max_spawn_task) {
+        // task finished hook
+        mng_.del_thread_guard(this);
     }
 
-    ~ThreadMng() { }
+    ThreadMng&     mng_;
+    TaskRunnable   func_;
+    std::unique_ptr<std::thread> thread_;
+};
+
+
+// 一个不带任务缓冲的线程管理类
+class ThreadMng {
 
     // 禁止拷贝
     ThreadMng(const ThreadMng&) = delete;
     ThreadMng& operator=(const ThreadMng&) = delete;
 
+public:
+    explicit ThreadMng(uint8_t max_spawn) :
+        max_spawn_(max_spawn) {
+        if (max_spawn_ == 0)
+            max_spawn_ = 1;
+    }
+
+    ~ThreadMng() {
+        join_all();
+    }
+
     // 增加任务执行线程，但是不会超过限制数目
     bool try_add_task(TaskRunnable& run) {
 
         std::lock_guard<std::mutex> lock(lock_);
-        if (threads_.size() >= max_spawn_task_)
+        if (threads_.size() >= max_spawn_)
             return false;
 
-        std::shared_ptr<ThreadGuard> task(new ThreadGuard(run, thread_tgp_));
-        threads_.emplace_back(std::move(task));
+        ThreadGuard* task = new ThreadGuard(*this, run);
+        if (task)
+            threads_.emplace_back(task);
         return true;
     }
 
@@ -83,79 +101,66 @@ public:
     bool add_task(TaskRunnable& run) {
 
         std::unique_lock<std::mutex> lock(lock_);
-        while (threads_.size() >= max_spawn_task_) {
+        while (threads_.size() >= max_task_) {
             item_notify_.wait(lock);
         }
 
-        // impossible
-        if (threads_.size() >= max_spawn_task_)
+        // impossible actually
+        if (threads_.size() >= max_task_)
             return false;
 
-        std::shared_ptr<ThreadGuard> task(new ThreadGuard(run, thread_tgp_));
-        threads_.emplace_back(std::move(task));
+        ThreadGuard* task = new ThreadGuard(*this, run);
+        if (task)
+            threads_.emplace_back(task);
+        return true;
+    }
+
+    // 阻塞直到所有任务都join
+    void join_all() {
+
+        std::unique_lock<std::mutex> lock(lock_);
+        for (auto it = threads_.begin(); it != threads_.end(); ++it) {
+            (*it)->join();
+            delete (*it);
+        }
+
+        threads_.clear();
+        item_notify_.notify_all();
+    }
+
+    bool add_thread_guard(ThreadGuard* thd) {
+
+        std::unique_lock<std::mutex> lock(lock_);
+        if (threads_.find(thd) != threads_.end()) {
+            log_err("add thread already in set: %p", thd);
+            return false;
+        }
+
+        threads_.insert(thd);
+        return true;
+    }
+
+    bool del_thread_guard(ThreadGuard* thd) {
+
+        std::unique_lock<std::mutex> lock(lock_);
+        if (threads_.find(thd) == threads_.end()) {
+            log_err("del thread not found in set: %p", thd);
+            return false;
+        }
+
+        threads_.erase(thd);
+        delete thd;
+        item_notify_.notify_all();
         return true;
     }
 
 
-    int try_join() {
-
-        std::unique_lock<std::mutex> lock(lock_);
-
-        int size = 0;
-        for (auto iter = threads_.begin(); iter != threads_.end(); /**/) {
-            auto curr_iter = iter++;
-            if ((*curr_iter)->joinable()) {
-                if ((*curr_iter)->try_join_for(1)) {
-                    threads_.erase(curr_iter);
-                    ++size;
-                }
-            }
-        }
-
-        return size;
-    }
-
-    void join_all() {
-
-        std::unique_lock<std::mutex> lock(lock_);
-
-        for (auto it = threads_.begin(); it != threads_.end(); ++it) {
-            if ((*it)->joinable())
-                (*it)->join();
-        }
-
-        threads_.clear();
-    }
-
-
-    uint32_t current_size() {
-        std::lock_guard<std::mutex> lock(lock_);
-        return threads_.size();
-    }
-
-    void modify_spawn_size(uint32_t nsize) {
-        if (nsize == 0) {
-            log_err("invalid new max_spawn_task size: %u", nsize);
-            return;
-        }
-
-        if (nsize != max_spawn_task_) {
-            log_warning("update ThreadMng task size from %u to %u",
-                       max_spawn_task_, nsize);
-            max_spawn_task_ = nsize;
-        }
-    }
-
 private:
 
-    uint32_t max_spawn_task_;
+    uint32_t max_spawn_;
 
     std::mutex lock_;
-    std::condition_variable item_notify_;
-
-    std::vector<std::shared_ptr<ThreadGuard>> threads_;
-    boost::thread_group thread_tgp_;
-
+    std::set<ThreadGuard*> threads_;
 };
 
 

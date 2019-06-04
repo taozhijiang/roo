@@ -24,29 +24,29 @@ namespace roo {
 class IoService {
 
 public:
-    IoService():
+    IoService() :
         lock_(),
         initialized_(false),
         io_service_thread_(),
         io_service_ptr_(new boost::asio::io_service()),
-        work_guard_(){
+        work_guard_() {
     }
 
     ~IoService() {
-        
-        if(io_service_ptr_)
+
+        if (io_service_ptr_)
             io_service_ptr_->stop();
-        
+
         work_guard_.reset();
-        
+
         if (io_service_thread_.joinable())
             io_service_thread_.join();
     }
-    
+
     // 禁止拷贝
     IoService(const IoService&) = delete;
     IoService& operator=(const IoService&) = delete;
-    
+
     bool init() {
 
         if (initialized_) {
@@ -59,7 +59,7 @@ public:
             return true;
         }
 
-        if(!io_service_ptr_)
+        if (!io_service_ptr_)
             io_service_ptr_.reset(new boost::asio::io_service());
 
         // work_guard_ 保证io_service_run不会因为没有任务而退出
@@ -84,7 +84,7 @@ public:
 
     void stop_io_service() {
 
-        if(io_service_ptr_)
+        if (io_service_ptr_)
             io_service_ptr_->stop();
 
         work_guard_.reset();
