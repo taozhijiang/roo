@@ -26,6 +26,9 @@ static std::mutex log_initialized_mutex_ {};
 bool log_init(int log_level, std::string module,
               std::string log_dir, int facility) {
 
+    std::lock_guard<std::mutex> lock(log_initialized_mutex_);
+
+    // 可以改变日志等级，其他的不允许动态改变
     if (log_level >= LOG_INFO) {
         FLAGS_minloglevel = 0; // INFO
     } else if (log_level >= LOG_WARNING) {
@@ -38,15 +41,14 @@ bool log_init(int log_level, std::string module,
         FLAGS_minloglevel = 0;
     }
 
+    if (log_initialized_) {
+        return true;
+    }
+
     if (!log_dir.empty())
         FLAGS_log_dir = log_dir;
 
     FLAGS_syslog_facility = facility;
-
-    std::lock_guard<std::mutex> lock(log_initialized_mutex_);
-    if (log_initialized_) {
-        return true;
-    }
 
     if (!module.empty()) {
         google::InitGoogleLogging(module.c_str());
