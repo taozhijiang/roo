@@ -2,7 +2,7 @@
 #include <string>
 
 #include <container/LruCache.h>
-
+#include <container/LruCacheMem.h>
 
 using namespace ::testing;
 using namespace roo;
@@ -10,7 +10,7 @@ using namespace roo;
 
 TEST(LruCacheTest, LRUSmokeTest) {
 
-    LruCache<std::string, std::string> caches(10, 1000);
+    LruCache<std::string, std::string> caches(10);
 
     ASSERT_THAT(caches.insert("key1", "value1"), Eq(true));
     ASSERT_THAT(caches.insert("key2", "value2"), Eq(true));
@@ -30,9 +30,9 @@ TEST(LruCacheTest, LRUSmokeTest) {
 
 
 
-TEST(LruCacheTest, MemTest) {
+TEST(LruCacheTest, LruCacheMemTest) {
 
-    LruCache<std::string, std::string> caches(10, 1000);
+    LruCacheMem<std::string, std::string> caches(10);
 
     ASSERT_THAT(caches.total_mem_used(), Eq(0));
 

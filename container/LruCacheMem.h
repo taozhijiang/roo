@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef __ROO_CONTAINER_LRU_CACHE_H__
-#define __ROO_CONTAINER_LRU_CACHE_H__
+#ifndef __ROO_CONTAINER_LRU_CACHE_MEM_H__
+#define __ROO_CONTAINER_LRU_CACHE_MEM_H__
 
 #include <string>
 #include <vector>
@@ -14,50 +14,43 @@
 
 #include <assert.h>
 
+#include "LruCache.h"
+
+// 基于unordered_map(hash)实现的LRU缓存数据结构，可以集成与应用软件内部的缓存机制
+// 1. (TODO) 更加准确的内存使用计算，因为某些类型(至少std::string)的存储数据是放在内存中的
+// 2. (TODO) 提供元素TTL过期自动删除的机制
+//
+// 除了内部保护list外，数据结构本身不持锁，使用者进行并发控制的保护
+
 namespace roo {
 
-//
-// 辅助类
 
-// 简单的链表，用来组织数据结构
-template<typename TKey>
-struct ListNode {
+// 每个元素插入后需要额外的内部管理空间
+const static size_t kSizeAdditional =
+    sizeof(ValueNode<int32_t, int32_t>) + sizeof(ListNode<int32_t>) - sizeof(int32_t) - sizeof(int32_t);
 
-    explicit ListNode() :
-        key_(),
-        prev_(NULL),
-        next_(NULL) { }
-
-    explicit ListNode(const TKey& key) :
-        key_(key),
-        prev_(NULL),
-        next_(NULL) { }
-
-    // 可以存储元素的迭代器地址，但是当rehash的时候会导致失效
-    TKey      key_;
-    ListNode* prev_;
-    ListNode* next_;
+// 默认的空间占用量计算，对于某些类型返回的类型长度可能不准确
+template<typename T>
+struct SizeOf : std::unary_function<T, size_t> {
+    size_t operator ()(const T& t) const {
+        return sizeof(t);
+    }
 };
 
-template<typename TKey, typename TValue>
-struct ValueNode {
+// 特例化常用的std::string类型的参数
+// sizeof(std::string)默认返回是8(64位机器)，然后再加上实际的数据使用量
+template<>
+size_t SizeOf<std::string>::operator()(const std::string& t) const {
+    // 觉得使用capacity可能更准确一些???
+    //return sizeof(std::string) + t.capacity();
 
-    typedef ListNode<TKey> ListNodeType;
+    return sizeof(std::string) + t.size();
+}
 
-    ValueNode() :
-        node_(NULL) { }
-
-    ValueNode(const TValue& value, ListNodeType* node) :
-        value_(value),
-        node_(node) { }
-
-    TValue        value_;
-    ListNodeType* node_;
-};
-
-
-template<typename TKey, typename TValue>
-class LruCache {
+template<typename TKey, typename TValue,
+         class ValueSize = SizeOf<TValue>,
+         class KeySize   = SizeOf<TKey> >
+class LruCacheMem {
 
 public:
     typedef TKey   key_type;
@@ -70,8 +63,10 @@ public:
     typedef std::pair<const TKey, TValue>  SnapshotValue;
 
 
-    explicit LruCache(size_t max_count) :
+    LruCacheMem(size_t max_count, size_t max_memory = 0) :
         max_count_(max_count),
+        max_memory_(max_memory),
+        mem_used_(0),
         head_(),
         tail_() {
         head_.prev_ = NULL;
@@ -80,13 +75,13 @@ public:
         tail_.next_ = NULL;
     }
 
-    ~LruCache() {
+    ~LruCacheMem() {
         clear();
     }
 
     // 禁止拷贝
-    LruCache(const LruCache& other) = delete;
-    LruCache& operator=(const LruCache&) = delete;
+    LruCacheMem(const LruCacheMem& other) = delete;
+    LruCacheMem& operator=(const LruCacheMem&) = delete;
 
 
 public:
@@ -128,6 +123,7 @@ public:
         }
 
         link_push_front(node);
+        mem_used_ = mem_used_ + calc_item_size(key, value);
 
         evict();
         return true;
@@ -141,10 +137,12 @@ public:
 
         // update
         ValueNodeType& oldValue = iter->second;
+        size_t old_value_size = calc_value_size_(oldValue.value_);
         oldValue.value_ = value;
 
         delink(oldValue.node_);
         link_push_front(oldValue.node_);
+        mem_used_ = mem_used_ + calc_value_size_(value) - old_value_size;
 
         evict();
         return true;
@@ -165,6 +163,7 @@ public:
         // reset all
         head_.next_ = &tail_;
         tail_.prev_ = &head_;
+        mem_used_ = 0;
     }
 
     // 对容器中的所有key进行快照并拷贝到keys中
@@ -183,7 +182,17 @@ public:
         return container_.size();
     }
 
+    size_t total_mem_used() const {
+        return mem_used_;
+    }
+
 private:
+
+    size_t calc_item_size(const TKey& key, const TValue& val) const {
+        return  calc_key_size_(key) * 2 +
+               calc_value_size_(val) +
+               kSizeAdditional;
+    }
 
     // 列表操作，从LRU链表中删除该节点
     void delink(ListNodeType* node) {
@@ -207,7 +216,8 @@ private:
     // 淘汰元素
     void evict() {
 
-        while (container_.size() >= max_count_) {
+        while (container_.size() >= max_count_ ||
+               (max_memory_ != 0 && mem_used_ >= max_memory_)) {
 
             if (container_.size() <= 1)
                 return;
@@ -219,6 +229,7 @@ private:
             const auto iter = container_.find(ill->key_);
             assert(iter != container_.cend());
 
+            mem_used_ = mem_used_ - (calc_item_size(iter->first, iter->second.value_) + kSizeAdditional);
             delink(ill);
             container_.erase(ill->key_);
             delete ill;
@@ -226,6 +237,12 @@ private:
     }
 
     const size_t max_count_;      // 最大元素个数
+
+    ValueSize    calc_value_size_;
+    KeySize      calc_key_size_;
+
+    const size_t max_memory_;     // 最大内存占用量(估算)
+    size_t       mem_used_;
 
     Container    container_;   // 主元素存储hash容器
 
@@ -237,5 +254,5 @@ private:
 
 } // roo
 
-#endif // __ROO_CONTAINER_LRU_CACHE_H__
+#endif // __ROO_CONTAINER_LRU_CACHE_MEM_H__
 

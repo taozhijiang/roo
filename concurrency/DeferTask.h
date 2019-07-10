@@ -40,11 +40,14 @@ public:
         thread_terminate_(false),
         tasks_() {
 
-        if (thread_num == 0)
+        if (thread_num == 0) {
+            log_err("DeferTask at least should have 1 thread.");
             thread_num = 1;
+        }
 
         threads_.reserve(thread_num);
         for (int i = 0; i < thread_num; ++i) {
+
             std::thread* thd = new std::thread(std::bind(&DeferTask::thread_run,  this));
             if (!thd) {
                 log_err("create DeferTask thread failed.");
@@ -57,13 +60,14 @@ public:
                     delete threads_[j];
                 }
 
+                // 抛出异常
                 throw ConstructException("DeferTask Thread Create Fail");
             }
 
             threads_.push_back(thd);
         }
 
-        log_warning("create %u threads for DeferTask successfully!", thread_num);
+        log_warning("totally created %u threads for DeferTask successfully!", thread_num);
     }
 
     void terminate() {
@@ -79,6 +83,7 @@ public:
         }
 
         threads_.clear();
+        log_warning("terminate DeferTask finished.");
     }
 
     ~DeferTask() {
@@ -86,11 +91,13 @@ public:
         log_warning("DeferTask destroy successfully.");
     }
 
+    // 增加需要执行的任务
     void add_defer_task(const TaskRunnable& func) {
         tasks_.PUSH(func);
     }
 
 private:
+
     void thread_run() {
 
         log_warning("DeferTask thread %#lx begin to run ...", (long)pthread_self());
