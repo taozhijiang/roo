@@ -59,14 +59,14 @@ TEST_F(SqlConnSt, SqlConnDataTypeTest) {
 
     std::string sql = "SELECT 123, 'ttz', 10.5;";
     shared_result_ptr result;
-    result.reset(conn->sqlconn_execute_query(sql));
+    result.reset(conn->execute_select(sql));
     ASSERT_THAT(result && result->next(), Eq(true));
 
     int32_t     int_val{};
     std::string str_val{};
     double      flt_val{};
 
-    bool success = cast_raw_value(result, 1, int_val, str_val, flt_val);
+    bool success = cast_value(result, 1, int_val, str_val, flt_val);
 
     ASSERT_THAT(success && int_val == 123 && str_val == "ttz", Eq(true));
     ASSERT_THAT(flt_val, DoubleEq(10.5));

@@ -79,16 +79,16 @@ bool SqlConn::ping_test() {
     std::string sql = "show databases;";
 
     shared_result_ptr result;
-    result.reset(sqlconn_execute_query(sql));
-    if (!result) {
-        log_err("Failed to query info: %s", sql.c_str());
+    result.reset(execute_select(sql));
+    if (!result || !result->next()) {
+        log_err("failure to select info: %s", sql.c_str());
         return false;
     }
 
     return true;
 }
 
-bool SqlConn::sqlconn_execute(const std::string& sql) {
+bool SqlConn::execute(const std::string& sql) {
 
     try {
 
@@ -113,7 +113,7 @@ bool SqlConn::sqlconn_execute(const std::string& sql) {
     return false;
 }
 
-sql::ResultSet* SqlConn::sqlconn_execute_query(const std::string& sql) {
+sql::ResultSet* SqlConn::execute_select(const std::string& sql) {
 
     sql::ResultSet* result = NULL;
 
@@ -141,7 +141,7 @@ sql::ResultSet* SqlConn::sqlconn_execute_query(const std::string& sql) {
     return result;
 }
 
-int SqlConn::sqlconn_execute_update(const std::string& sql) {
+int SqlConn::execute_update(const std::string& sql) {
 
     try {
 

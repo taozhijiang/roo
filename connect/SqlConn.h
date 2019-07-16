@@ -28,7 +28,39 @@
 
 #include <connect/ConnPool.h>
 
+
 namespace roo {
+    
+#if 0
+
+// 接口汇总
+template<typename T>
+bool cast_value(shared_result_ptr result, const uint32_t idx, T& val);
+template<typename T, typename ... Args>
+bool cast_value(shared_result_ptr result, const uint32_t idx, T& val, Args& ... rest);
+
+inline int rs_is_null(shared_result_ptr result, const uint32_t idx);
+
+
+// Class SqlConn
+bool execute(const std::string& sql);
+sql::ResultSet* execute_select(const std::string& sql);
+int  execute_update(const std::string& sql);
+
+// 只返回一条记录的时候，返回true
+template<typename T>
+bool select_one(const std::string& sql, T& val);
+template<typename ... Args>
+bool select_one(const std::string& sql, Args& ... rest);
+
+// 执行有错误返回false，否则返回true(真正的vector可能是空的)
+template<typename T>
+bool select_multi(const std::string& sql, std::vector<T>& vec);
+
+// 如果有多条记录，多个列，使用execute_select手动进行查询
+
+#endif 
+    
 
 class SqlConn;
 typedef std::shared_ptr<SqlConn> sql_conn_ptr;
@@ -53,18 +85,16 @@ public:
 };
 
 template<typename T>
-bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val) {
+bool cast_value(shared_result_ptr result, const uint32_t idx, T& val) {
 
     try {
 
 #if __cplusplus >= 201103L
 
-        if (std::is_floating_point<T>::value)
-        {
+        if (std::is_floating_point<T>::value) {
             val = static_cast<T>(result->getDouble(idx));
         }
-        else if (std::is_integral<T>::value)
-        {
+        else if (std::is_integral<T>::value) {
             if (std::is_signed<T>::value) {
                 val = static_cast<T>(result->getInt64(idx));
             } else {
@@ -74,12 +104,10 @@ bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val) {
 
 #else
 
-        if (boost::is_floating_point<T>::value)
-        {
+        if (boost::is_floating_point<T>::value) {
             val = static_cast<T>(result->getDouble(idx));
         }
-        else if (boost::is_integral<T>::value)
-        {
+        else if (boost::is_integral<T>::value) {
             if (boost::is_signed<T>::value) {
                 val = static_cast<T>(result->getInt64(idx));
             } else {
@@ -109,7 +137,7 @@ bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val) {
 
 // 特例化如果多次包含连接会重复定义，所以要么static、inline
 template<>
-inline bool cast_raw_value(shared_result_ptr result, const uint32_t idx, std::string& val) {
+inline bool cast_value(shared_result_ptr result, const uint32_t idx, std::string& val) {
 
     try {
         val = static_cast<std::string>(result->getString(static_cast<int32_t>(idx)));
@@ -129,16 +157,18 @@ inline bool cast_raw_value(shared_result_ptr result, const uint32_t idx, std::st
 
 // 可变模板参数进行查询
 template<typename T, typename ... Args>
-bool cast_raw_value(shared_result_ptr result, const uint32_t idx, T& val, Args& ... rest) {
+bool cast_value(shared_result_ptr result, const uint32_t idx, T& val, Args& ... rest) {
 
-    cast_raw_value(result, idx, val);
-    return cast_raw_value(result, idx+1, rest ...);
+    cast_value(result, idx, val);
+    return cast_value(result, idx+1, rest ...);
 }
 
 // -1 err, 0 false, 1 true
+// Column index, first column is 1, second is 2,...
 inline int rs_is_null(shared_result_ptr result, const uint32_t idx) {
 
     try {
+        if (!result) return -1;
         return result->isNull(idx) ? 1 : 0;
     } catch (sql::SQLException& e) {
 
@@ -169,21 +199,23 @@ public:
     }
 
     // Simple SQL API
-    bool sqlconn_execute(const std::string& sql);
-    sql::ResultSet* sqlconn_execute_query(const std::string& sql);
-    int sqlconn_execute_update(const std::string& sql);
+    bool execute(const std::string& sql);
+    sql::ResultSet* execute_select(const std::string& sql);
+    int  execute_update(const std::string& sql);
 
-    // 常用操作
+    // 常用操作，当取到的记录恰好是1条的时候返回true
     template<typename T>
-    bool sqlconn_execute_query_value(const std::string& sql, T& val);
+    bool select_one(const std::string& sql, T& val);
     template<typename ... Args>
-    bool sqlconn_execute_query_values(const std::string& sql, Args& ... rest);
-    template<typename T>
-    bool sqlconn_execute_query_multi(const std::string& sql, std::vector<T>& vec);
+    bool select_one(const std::string& sql, Args& ... rest);
 
-    bool begin_transaction() { return sqlconn_execute("START TRANSACTION"); }
-    bool commit() { return sqlconn_execute("COMMIT"); }
-    bool rollback() { return sqlconn_execute("ROLLBACK"); }
+    // 执行有错误返回false，否则返回true(真正的vector可能是空的)
+    template<typename T>
+    bool select_multi(const std::string& sql, std::vector<T>& vec);
+
+    bool begin_transaction() { return execute("START TRANSACTION"); }
+    bool commit() { return execute("COMMIT"); }
+    bool rollback() { return execute("ROLLBACK"); }
 
 private:
     sql::Driver* driver_;   /* no need explicit free */
@@ -199,7 +231,7 @@ private:
 
 
 template<typename T>
-bool SqlConn::sqlconn_execute_query_value(const std::string& sql, T& val) {
+bool SqlConn::select_one(const std::string& sql, T& val) {
     try {
 
         if (!conn_->isValid()) {
@@ -213,12 +245,12 @@ bool SqlConn::sqlconn_execute_query_value(const std::string& sql, T& val) {
             return false;
 
         if (result->rowsCount() != 1) {
-            log_err("Error rows count: %d", result->rowsCount());
+            log_err("Error rows count: %lu", result->rowsCount());
             return false;
         }
 
         if (result->next())
-            return cast_raw_value(result, 1, val);
+            return cast_value(result, 1, val);
 
         return false;
 
@@ -238,7 +270,7 @@ bool SqlConn::sqlconn_execute_query_value(const std::string& sql, T& val) {
 
 
 template<typename ... Args>
-bool SqlConn::sqlconn_execute_query_values(const std::string& sql, Args& ... rest) {
+bool SqlConn::select_one(const std::string& sql, Args& ... rest) {
 
     try {
         if (!conn_->isValid()) {
@@ -252,12 +284,12 @@ bool SqlConn::sqlconn_execute_query_values(const std::string& sql, Args& ... res
             return false;
 
         if (result->rowsCount() != 1) {
-            log_err("Error rows count: %d", result->rowsCount());
+            log_err("Error rows count: %lu", result->rowsCount());
             return false;
         }
 
         if (result->next())
-        return cast_raw_value(result, 1, rest ...);
+            return cast_value(result, 1, rest ...);
 
         return false;
 
@@ -277,7 +309,7 @@ bool SqlConn::sqlconn_execute_query_values(const std::string& sql, Args& ... res
 
 
 template<typename T>
-bool SqlConn::sqlconn_execute_query_multi(const std::string& sql, std::vector<T>& vec) {
+bool SqlConn::select_multi(const std::string& sql, std::vector<T>& vec) {
 
     try {
 
@@ -293,14 +325,14 @@ bool SqlConn::sqlconn_execute_query_multi(const std::string& sql, std::vector<T>
 
         vec.clear();
         T r_val;
-        bool bRet = false;
         while (result->next()) {
-            if (cast_raw_value(result, 1, r_val)) {
+            if (cast_value(result, 1, r_val)) 
                 vec.push_back(r_val);
-                bRet = true;
-            }
+            else 
+                return false;
         }
-        return bRet;
+
+        return true;
 
     } catch (sql::SQLException& e) {
 
