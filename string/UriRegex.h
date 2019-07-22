@@ -9,7 +9,7 @@
 #ifndef __ROO_STRING_URI_REGEX_H__
 #define __ROO_STRING_URI_REGEX_H__
 
-#include <libconfig.h++>
+#include <libconfig/libconfig.h++>
 
 
 #include <boost/regex.hpp>

@@ -133,7 +133,7 @@ public:
 #endif
         }
 
-// all check here
+        // all check here
         if (items_.empty()) {
             return false;
         }

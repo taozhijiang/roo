@@ -14,7 +14,7 @@
 #include <vector>
 #include <functional>
 
-#include <libconfig.h++>
+#include <libconfig/libconfig.h++>
 
 #include <other/Log.h>
 

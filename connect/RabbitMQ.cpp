@@ -319,7 +319,7 @@ int RabbitChannel::declareExchange(const std::string &exchange_name,
     declare.internal = false;
     declare.nowait = false;
 
-#if 1 //AMQP_VERSION_MINOR == 4
+#if AMQP_VERSION_MAJOR == 0 && AMQP_VERSION_MINOR <= 5  // CentOS 6.x
     amqp_exchange_declare_ok_t *r = amqp_exchange_declare(mqHelper_.connection_, id_, declare.exchange,
                                                           declare.type, declare.passive, declare.durable, amqp_empty_table);
 #else

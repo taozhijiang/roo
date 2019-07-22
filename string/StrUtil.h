@@ -9,9 +9,6 @@
 #ifndef __ROO_STRING_STR_UTIL_H__
 #define __ROO_STRING_STR_UTIL_H__
 
-#include <libconfig.h++>
-
-
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>

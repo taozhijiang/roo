@@ -25,7 +25,8 @@ else(BUILD_DEBUG)
 endif(BUILD_DEBUG)
 
 include_directories( ../xtra_rhelz.x/include
-                     ../xtra_rhelz.x/include/google
+                     ../xtra_rhelz.x/include/google 
+                     ../xtra_rhelz.x/include/rabbitmq
                      ./ )
 
 SET(SUBDIR connect concurrency container crypto string other scaffold)
