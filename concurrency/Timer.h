@@ -80,6 +80,8 @@ private:
 //      TimerObject完全是依靠shared_from_this()自持有的
 class Timer {
 
+    __noncopyable__(Timer)
+    
 public:
 
     Timer() :
@@ -120,10 +122,6 @@ public:
 
 
 private:
-
-    // 禁止拷贝
-    Timer(const Timer&) = delete;
-    Timer& operator=(const Timer&) = delete;
 
 
     // 再启一个io_service_，主要使用Timer单例和boost::asio异步框架

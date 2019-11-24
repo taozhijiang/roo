@@ -41,8 +41,7 @@ public:
             items_.push_back(*iter);
     }
 
-    ~PairVec() {
-    }
+    ~PairVec() = default;
 
 public:
 

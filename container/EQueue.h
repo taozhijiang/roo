@@ -22,8 +22,8 @@ namespace roo {
 template<typename T>
 class EQueue {
 public:
-    EQueue() { }
-    virtual ~EQueue() { }
+    EQueue() = default;
+    ~EQueue()  = default;
 
     void PUSH(const T& t) {
         std::lock_guard<std::mutex> lock(lock_);

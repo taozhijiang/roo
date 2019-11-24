@@ -104,6 +104,7 @@ int Setting::module_status(std::string& module, std::string& name, std::string& 
     std::stringstream ss;
     ss << "attached runtime update: " << std::endl;
 
+    std::lock_guard<std::mutex> lock(lock_);
     int i = 1;
     for (auto it = calls_.begin(); it != calls_.end(); ++it) {
         ss << "\t" << i++ << ". "<< it->first << std::endl;

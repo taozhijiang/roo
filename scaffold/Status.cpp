@@ -32,6 +32,7 @@ int Status::module_status(std::string& module, std::string& name, std::string& v
     std::stringstream ss;
     ss << "attached status: " << std::endl;
 
+    std::lock_guard<std::mutex> lock(lock_);
     int i = 1;
     for (auto it = calls_.begin(); it != calls_.end(); ++it) {
         ss << "\t" << i++ << ". "<< it->first << std::endl;

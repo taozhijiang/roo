@@ -90,6 +90,7 @@ private:
                 thread_mng_.add_task(tasks[i]);
             }
 
+            thread_mng_.join_all();
             log_warning("count %d task process done!", static_cast<int>(tasks.size()));
         }
     }

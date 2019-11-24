@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
+
 #include <boost/algorithm/string.hpp>
 
 #include <connect/RabbitMQ.h>
@@ -284,6 +285,7 @@ int RabbitChannel::setConfirmSelect(){
 
     amqp_confirm_select_t select = {};
     select.nowait = false;
+    (void)select;
 
     amqp_confirm_select_ok_t *r = amqp_confirm_select(mqHelper_.connection_, id_);
     (void)r;
@@ -954,7 +956,7 @@ int RabbitMQHelper::basicConsumeMessage(RabbitMessage& rabbit_msg,
     }
 
     amqp_maybe_release_buffers(connection_);
-    return 0;
+    return retCode;
 }
 
 // class RabbitMQHelper

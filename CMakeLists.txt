@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8.11)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x " )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 " )
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Woverloaded-virtual -Wpointer-arith -Wwrite-strings -Werror=format -march=native " )
 include("${PROJECT_SOURCE_DIR}/help.cmake")
 define_colors()
@@ -24,10 +24,12 @@ else(BUILD_DEBUG)
     message(STATUS "${Red}build_type RelWithDebInfo flag: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}${ColourReset}")
 endif(BUILD_DEBUG)
 
-include_directories( ../xtra_rhelz.x/include
-                     ../xtra_rhelz.x/include/google 
-                     ../xtra_rhelz.x/include/rabbitmq
-                     ./ )
+include_directories( ./
+		     ../xtra_rhel7.x/self/include/
+                     ../xtra_rhel7.x/self/include/rabbitmq
+		     ../xtra_rhel7.x/boost_prefix/include/
+		     ../xtra_rhel7.x/google_prefix/include/
+                   )
 
 SET(SUBDIR connect concurrency container crypto string other scaffold)
 foreach(dir ${SUBDIR})
