@@ -12,7 +12,7 @@
 
 #include <other/Log.h>
 
-#include <glog_syslog/logging.h>
+#include <glogb/logging.h>
 
 #include <mutex>
 

@@ -20,7 +20,7 @@
 #include <boost/current_function.hpp>
 
 #include <syslog.h>
-#include <glog_syslog/logging.h>
+#include <glogb/logging.h>
 
 // LOG_EMERG   0   system is unusable
 // LOG_ALERT   1   action must be taken immediately

@@ -7,24 +7,27 @@ define_colors()
 
 include_directories(
     ../
-    ../../xtra_rhelz.x/include/
-    ../../xtra_rhelz.x/include/google/
+    ../../xtra_rhel7.x/self/include/
+    ../../xtra_rhel7.x/self/include/curl-7.53.1
+    ../../xtra_rhel7.x/boost_prefix/include/
+    ../../xtra_rhel7.x/google_prefix/include/
 )
 
 link_directories(
-    ../../xtra_rhelz.x/libs/
-    ../../xtra_rhelz.x/libs/boost/
-    ../../xtra_rhelz.x/libs/google/
+    ../../xtra_rhel7.x/self/lib/
+    ../../xtra_rhel7.x/self/lib/curl-7.53.1
+    ../../xtra_rhel7.x/boost_prefix/lib/
+    ../../xtra_rhel7.x/google_prefix/lib/
     ../lib
 )
 
 set (TEST_HOST_LIB Roo)
 
-set (EXTRA_LIBS ${EXTRA_LIBS} curl)
 set (EXTRA_LIBS ${EXTRA_LIBS} boost_system)
 set (EXTRA_LIBS ${EXTRA_LIBS} mysqlcppconn)
-set (EXTRA_LIBS ${EXTRA_LIBS} glog_syslog)
+set (EXTRA_LIBS ${EXTRA_LIBS} glogb)
 set (EXTRA_LIBS ${EXTRA_LIBS} gtest gmock gtest_main)
+set (EXTRA_LIBS ${EXTRA_LIBS} dl curl pthread z crypto ssl)
 
 
 add_individual_test(SqlConn)
